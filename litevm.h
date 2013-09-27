@@ -1,5 +1,5 @@
-#ifndef __KVM_H
-#define __KVM_H
+#ifndef __LITEVM_H
+#define __LITEVM_H
 
 #include <linux/types.h>
 #include <linux/list.h>
@@ -30,21 +30,21 @@
 #define CR4_PGE_MASK (1ULL << 7)
 #define CR4_VMXE_MASK (1ULL << 13)
 
-#define KVM_GUEST_CR0_MASK \
+#define LITEVM_GUEST_CR0_MASK \
 	(CR0_PG_MASK | CR0_PE_MASK | CR0_WP_MASK | CR0_NE_MASK)
-#define KVM_VM_CR0_ALWAYS_ON KVM_GUEST_CR0_MASK
+#define LITEVM_VM_CR0_ALWAYS_ON LITEVM_GUEST_CR0_MASK
 
-#define KVM_GUEST_CR4_MASK \
+#define LITEVM_GUEST_CR4_MASK \
 	(CR4_PSE_MASK | CR4_PAE_MASK | CR4_PGE_MASK | CR4_VMXE_MASK | CR4_VME_MASK)
-#define KVM_PMODE_VM_CR4_ALWAYS_ON (CR4_VMXE_MASK | CR4_PAE_MASK)
-#define KVM_RMODE_VM_CR4_ALWAYS_ON (CR4_VMXE_MASK | CR4_PAE_MASK | CR4_VME_MASK)
+#define LITEVM_PMODE_VM_CR4_ALWAYS_ON (CR4_VMXE_MASK | CR4_PAE_MASK)
+#define LITEVM_RMODE_VM_CR4_ALWAYS_ON (CR4_VMXE_MASK | CR4_PAE_MASK | CR4_VME_MASK)
 
 #define INVALID_PAGE (~(hpa_t)0)
 #define UNMAPPED_GVA (~(gpa_t)0)
 
-#define KVM_MAX_VCPUS 1
-#define KVM_MEMORY_SLOTS 4
-#define KVM_NUM_MMU_PAGES 256
+#define LITEVM_MAX_VCPUS 1
+#define LITEVM_MEMORY_SLOTS 4
+#define LITEVM_NUM_MMU_PAGES 256
 
 #define FX_IMAGE_SIZE 512
 #define FX_IMAGE_ALIGN 16
@@ -82,7 +82,7 @@ typedef unsigned long  hva_t;
 typedef u64            hpa_t;
 typedef unsigned long  hfn_t;
 
-struct kvm_mmu_page {
+struct litevm_mmu_page {
 	struct list_head link;
 	hpa_t page_hpa;
 	unsigned long slot_bitmap; /* One bit set per slot which has memory
@@ -104,25 +104,25 @@ struct vmx_msr_entry {
 	u64 data;
 };
 
-struct kvm_vcpu;
+struct litevm_vcpu;
 
 /*
  * x86 supports 3 paging modes (4-level 64-bit, 3-level 64-bit, and 2-level
- * 32-bit).  The kvm_mmu structure abstracts the details of the current mmu
+ * 32-bit).  The litevm_mmu structure abstracts the details of the current mmu
  * mode.
  */
-struct kvm_mmu {
-	void (*new_cr3)(struct kvm_vcpu *vcpu);
-	int (*page_fault)(struct kvm_vcpu *vcpu, gva_t gva, u32 err);
-	void (*inval_page)(struct kvm_vcpu *vcpu, gva_t gva);
-	void (*free)(struct kvm_vcpu *vcpu);
-	gpa_t (*gva_to_gpa)(struct kvm_vcpu *vcpu, gva_t gva);
+struct litevm_mmu {
+	void (*new_cr3)(struct litevm_vcpu *vcpu);
+	int (*page_fault)(struct litevm_vcpu *vcpu, gva_t gva, u32 err);
+	void (*inval_page)(struct litevm_vcpu *vcpu, gva_t gva);
+	void (*free)(struct litevm_vcpu *vcpu);
+	gpa_t (*gva_to_gpa)(struct litevm_vcpu *vcpu, gva_t gva);
 	hpa_t root_hpa;
 	int root_level;
 	int shadow_root_level;
 };
 
-struct kvm_guest_debug {
+struct litevm_guest_debug {
 	int enabled;
 	unsigned long bp[4];
 	int singlestep;
@@ -150,8 +150,8 @@ enum {
 	NR_VCPU_REGS
 };
 
-struct kvm_vcpu {
-	struct kvm *kvm;
+struct litevm_vcpu {
+	struct litevm *litevm;
 	struct vmcs *vmcs;
 	struct mutex mutex;
 	int   cpu;
@@ -172,10 +172,10 @@ struct kvm_vcpu {
 	struct vmx_msr_entry *host_msrs;
 
 	struct list_head free_pages;
-	struct kvm_mmu_page page_header_buf[KVM_NUM_MMU_PAGES];
-	struct kvm_mmu mmu;
+	struct litevm_mmu_page page_header_buf[LITEVM_NUM_MMU_PAGES];
+	struct litevm_mmu mmu;
 
-	struct kvm_guest_debug guest_debug;
+	struct litevm_guest_debug guest_debug;
 
 	char fx_buf[FX_BUF_SIZE];
 	char *host_fx_image;
@@ -199,7 +199,7 @@ struct kvm_vcpu {
 	} rmode;
 };
 
-struct kvm_memory_slot {
+struct litevm_memory_slot {
 	gfn_t base_gfn;
 	unsigned long npages;
 	unsigned long flags;
@@ -207,17 +207,17 @@ struct kvm_memory_slot {
 	unsigned long *dirty_bitmap;
 };
 
-struct kvm {
+struct litevm {
 	spinlock_t lock; /* protects everything except vcpus */
 	int nmemslots;
-	struct kvm_memory_slot memslots[KVM_MEMORY_SLOTS];
+	struct litevm_memory_slot memslots[LITEVM_MEMORY_SLOTS];
 	struct list_head active_mmu_pages;
-	struct kvm_vcpu vcpus[KVM_MAX_VCPUS];
+	struct litevm_vcpu vcpus[LITEVM_MAX_VCPUS];
 	int memory_config_version;
 	int busy;
 };
 
-struct kvm_stat {
+struct litevm_stat {
 	u32 pf_fixed;
 	u32 pf_guest;
 	u32 tlb_flush;
@@ -230,48 +230,48 @@ struct kvm_stat {
 	u32 irq_exits;
 };
 
-extern struct kvm_stat kvm_stat;
+extern struct litevm_stat litevm_stat;
 
-#define kvm_printf(kvm, fmt ...) printk(KERN_DEBUG fmt)
-#define vcpu_printf(vcpu, fmt...) kvm_printf(vcpu->kvm, fmt)
+#define litevm_printf(litevm, fmt ...) printk(KERN_DEBUG fmt)
+#define vcpu_printf(vcpu, fmt...) litevm_printf(vcpu->litevm, fmt)
 
-void kvm_mmu_destroy(struct kvm_vcpu *vcpu);
-int kvm_mmu_init(struct kvm_vcpu *vcpu);
+void litevm_mmu_destroy(struct litevm_vcpu *vcpu);
+int litevm_mmu_init(struct litevm_vcpu *vcpu);
 
-int kvm_mmu_reset_context(struct kvm_vcpu *vcpu);
-void kvm_mmu_slot_remove_write_access(struct kvm *kvm, int slot);
+int litevm_mmu_reset_context(struct litevm_vcpu *vcpu);
+void litevm_mmu_slot_remove_write_access(struct litevm *litevm, int slot);
 
-hpa_t gpa_to_hpa(struct kvm_vcpu *vcpu, gpa_t gpa);
+hpa_t gpa_to_hpa(struct litevm_vcpu *vcpu, gpa_t gpa);
 #define HPA_MSB ((sizeof(hpa_t) * 8) - 1)
 #define HPA_ERR_MASK ((hpa_t)1 << HPA_MSB)
 static inline int is_error_hpa(hpa_t hpa) { return hpa >> HPA_MSB; }
-hpa_t gva_to_hpa(struct kvm_vcpu *vcpu, gva_t gva);
+hpa_t gva_to_hpa(struct litevm_vcpu *vcpu, gva_t gva);
 
 extern hpa_t bad_page_address;
 
-static inline struct page *gfn_to_page(struct kvm_memory_slot *slot, gfn_t gfn)
+static inline struct page *gfn_to_page(struct litevm_memory_slot *slot, gfn_t gfn)
 {
 	return slot->phys_mem[gfn - slot->base_gfn];
 }
 
-struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn);
-void mark_page_dirty(struct kvm *kvm, gfn_t gfn);
+struct litevm_memory_slot *gfn_to_memslot(struct litevm *litevm, gfn_t gfn);
+void mark_page_dirty(struct litevm *litevm, gfn_t gfn);
 
-void realmode_lgdt(struct kvm_vcpu *vcpu, u16 size, unsigned long address);
-void realmode_lidt(struct kvm_vcpu *vcpu, u16 size, unsigned long address);
-void realmode_lmsw(struct kvm_vcpu *vcpu, unsigned long msw,
+void realmode_lgdt(struct litevm_vcpu *vcpu, u16 size, unsigned long address);
+void realmode_lidt(struct litevm_vcpu *vcpu, u16 size, unsigned long address);
+void realmode_lmsw(struct litevm_vcpu *vcpu, unsigned long msw,
 		   unsigned long *rflags);
 
-unsigned long realmode_get_cr(struct kvm_vcpu *vcpu, int cr);
-void realmode_set_cr(struct kvm_vcpu *vcpu, int cr, unsigned long value,
+unsigned long realmode_get_cr(struct litevm_vcpu *vcpu, int cr);
+void realmode_set_cr(struct litevm_vcpu *vcpu, int cr, unsigned long value,
 		     unsigned long *rflags);
 
-int kvm_read_guest(struct kvm_vcpu *vcpu,
+int litevm_read_guest(struct litevm_vcpu *vcpu,
 	       gva_t addr,
 	       unsigned long size,
 	       void *dest);
 
-int kvm_write_guest(struct kvm_vcpu *vcpu,
+int litevm_write_guest(struct litevm_vcpu *vcpu,
 		gva_t addr,
 		unsigned long size,
 		void *data);
@@ -310,8 +310,8 @@ static inline int is_long_mode(void)
 
 static inline unsigned long guest_cr4(void)
 {
-	return (vmcs_readl(CR4_READ_SHADOW) & KVM_GUEST_CR4_MASK) |
-		(vmcs_readl(GUEST_CR4) & ~KVM_GUEST_CR4_MASK);
+	return (vmcs_readl(CR4_READ_SHADOW) & LITEVM_GUEST_CR4_MASK) |
+		(vmcs_readl(GUEST_CR4) & ~LITEVM_GUEST_CR4_MASK);
 }
 
 static inline int is_pae(void)
@@ -326,8 +326,8 @@ static inline int is_pse(void)
 
 static inline unsigned long guest_cr0(void)
 {
-	return (vmcs_readl(CR0_READ_SHADOW) & KVM_GUEST_CR0_MASK) |
-		(vmcs_readl(GUEST_CR0) & ~KVM_GUEST_CR0_MASK);
+	return (vmcs_readl(CR0_READ_SHADOW) & LITEVM_GUEST_CR0_MASK) |
+		(vmcs_readl(GUEST_CR0) & ~LITEVM_GUEST_CR0_MASK);
 }
 
 static inline unsigned guest_cpl(void)
@@ -353,21 +353,21 @@ static inline int is_external_interrupt(u32 intr_info)
 		== (INTR_TYPE_EXT_INTR | INTR_INFO_VALID_MASK);
 }
 
-static inline void flush_guest_tlb(struct kvm_vcpu *vcpu)
+static inline void flush_guest_tlb(struct litevm_vcpu *vcpu)
 {
 	vmcs_writel(GUEST_CR3, vmcs_readl(GUEST_CR3));
 }
 
-static inline int memslot_id(struct kvm *kvm, struct kvm_memory_slot *slot)
+static inline int memslot_id(struct litevm *litevm, struct litevm_memory_slot *slot)
 {
-	return slot - kvm->memslots;
+	return slot - litevm->memslots;
 }
 
-static inline struct kvm_mmu_page *page_header(hpa_t shadow_page)
+static inline struct litevm_mmu_page *page_header(hpa_t shadow_page)
 {
 	struct page *page = pfn_to_page(shadow_page >> PAGE_SHIFT);
 
-	return (struct kvm_mmu_page *)page->private;
+	return (struct litevm_mmu_page *)page->private;
 }
 
 #ifdef __x86_64__
@@ -377,11 +377,11 @@ static inline struct kvm_mmu_page *page_header(hpa_t shadow_page)
  * we need to allocate shadow page tables in the first 4GB of memory, which
  * happens to fit the DMA32 zone.
  */
-#define GFP_KVM_MMU (GFP_KERNEL | __GFP_DMA32)
+#define GFP_LITEVM_MMU (GFP_KERNEL | __GFP_DMA32)
 
 #else
 
-#define GFP_KVM_MMU GFP_KERNEL
+#define GFP_LITEVM_MMU GFP_KERNEL
 
 #endif
 

@@ -136,7 +136,7 @@ struct cpu_user_regs;
 
 struct x86_emulate_ctxt {
 	/* Register state before/after emulation. */
-	struct kvm_vcpu *vcpu;
+	struct litevm_vcpu *vcpu;
 
 	/* Linear faulting address (if emulating a page-faulting instruction). */
 	unsigned long eflags;

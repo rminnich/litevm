@@ -40,13 +40,13 @@ struct guest_walker {
 };
 
 static void FNAME(init_walker)(struct guest_walker *walker,
-			       struct kvm_vcpu *vcpu)
+			       struct litevm_vcpu *vcpu)
 {
 	hpa_t hpa;
-	struct kvm_memory_slot *slot;
+	struct litevm_memory_slot *slot;
 
 	walker->level = vcpu->mmu.root_level;
-	slot = gfn_to_memslot(vcpu->kvm,
+	slot = gfn_to_memslot(vcpu->litevm,
 			      (vcpu->cr3 & PT64_BASE_ADDR_MASK) >> PAGE_SHIFT);
 	hpa = safe_gpa_to_hpa(vcpu, vcpu->cr3 & PT64_BASE_ADDR_MASK);
 	walker->table = kmap_atomic(pfn_to_page(hpa >> PAGE_SHIFT), KM_USER0);
@@ -64,7 +64,7 @@ static void FNAME(release_walker)(struct guest_walker *walker)
 	kunmap_atomic(walker->table, KM_USER0);
 }
 
-static void FNAME(set_pte)(struct kvm_vcpu *vcpu, u64 guest_pte,
+static void FNAME(set_pte)(struct litevm_vcpu *vcpu, u64 guest_pte,
 			   u64 *shadow_pte, u64 access_bits)
 {
 	ASSERT(*shadow_pte == 0);
@@ -74,7 +74,7 @@ static void FNAME(set_pte)(struct kvm_vcpu *vcpu, u64 guest_pte,
 		       guest_pte & PT_DIRTY_MASK, access_bits);
 }
 
-static void FNAME(set_pde)(struct kvm_vcpu *vcpu, u64 guest_pde,
+static void FNAME(set_pde)(struct litevm_vcpu *vcpu, u64 guest_pde,
 			   u64 *shadow_pte, u64 access_bits,
 			   int index)
 {
@@ -96,7 +96,7 @@ static void FNAME(set_pde)(struct kvm_vcpu *vcpu, u64 guest_pde,
 /*
  * Fetch a guest pte from a specific level in the paging hierarchy.
  */
-static pt_element_t *FNAME(fetch_guest)(struct kvm_vcpu *vcpu,
+static pt_element_t *FNAME(fetch_guest)(struct litevm_vcpu *vcpu,
 					struct guest_walker *walker,
 					int level,
 					gva_t addr)
@@ -129,7 +129,7 @@ static pt_element_t *FNAME(fetch_guest)(struct kvm_vcpu *vcpu,
 /*
  * Fetch a shadow pte for a specific level in the paging hierarchy.
  */
-static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+static u64 *FNAME(fetch)(struct litevm_vcpu *vcpu, gva_t addr,
 			      struct guest_walker *walker)
 {
 	hpa_t shadow_addr;
@@ -182,7 +182,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
 			return shadow_ent;
 		}
 
-		shadow_addr = kvm_mmu_alloc_page(vcpu, shadow_ent);
+		shadow_addr = litevm_mmu_alloc_page(vcpu, shadow_ent);
 		if (!VALID_PAGE(shadow_addr))
 			return ERR_PTR(-ENOMEM);
 		if (!is_long_mode() && level == 3)
@@ -204,7 +204,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
  * - update the guest pte dirty bit
  * - update our own dirty page tracking structures
  */
-static int FNAME(fix_write_pf)(struct kvm_vcpu *vcpu,
+static int FNAME(fix_write_pf)(struct litevm_vcpu *vcpu,
 			       u64 *shadow_ent,
 			       struct guest_walker *walker,
 			       gva_t addr,
@@ -245,7 +245,7 @@ static int FNAME(fix_write_pf)(struct kvm_vcpu *vcpu,
 	}
 
 	gfn = (*guest_ent & PT64_BASE_ADDR_MASK) >> PAGE_SHIFT;
-	mark_page_dirty(vcpu->kvm, gfn);
+	mark_page_dirty(vcpu->litevm, gfn);
 	*shadow_ent |= PT_WRITABLE_MASK;
 	*guest_ent |= PT_DIRTY_MASK;
 
@@ -265,7 +265,7 @@ static int FNAME(fix_write_pf)(struct kvm_vcpu *vcpu,
  *
  *  Returns: 1 if we need to emulate the instruction, 0 otherwise
  */
-static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr,
+static int FNAME(page_fault)(struct litevm_vcpu *vcpu, gva_t addr,
 			       u32 error_code)
 {
 	int write_fault = error_code & PFERR_WRITE_MASK;
@@ -329,12 +329,12 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr,
 		return 0;
 	}
 
-	++kvm_stat.pf_fixed;
+	++litevm_stat.pf_fixed;
 
 	return 0;
 }
 
-static gpa_t FNAME(gva_to_gpa)(struct kvm_vcpu *vcpu, gva_t vaddr)
+static gpa_t FNAME(gva_to_gpa)(struct litevm_vcpu *vcpu, gva_t vaddr)
 {
 	struct guest_walker walker;
 	pt_element_t guest_pte;

@@ -16,10 +16,10 @@
 
 #include <linux/highmem.h>
 
-#include "kvm.h"
+#include "litevm.h"
 #include "debug.h"
 
-#ifdef KVM_DEBUG
+#ifdef LITEVM_DEBUG
 
 static const char *vmx_msr_name[] = {
 	"MSR_EFER", "MSR_STAR", "MSR_CSTAR",
@@ -28,7 +28,7 @@ static const char *vmx_msr_name[] = {
 
 #define NR_VMX_MSR (sizeof(vmx_msr_name) / sizeof(char*))
 
-void show_msrs(struct kvm_vcpu *vcpu)
+void show_msrs(struct litevm_vcpu *vcpu)
 {
 	int i;
 
@@ -40,7 +40,7 @@ void show_msrs(struct kvm_vcpu *vcpu)
 	}
 }
 
-void show_code(struct kvm_vcpu *vcpu)
+void show_code(struct litevm_vcpu *vcpu)
 {
 	gva_t rip = vmcs_readl(GUEST_RIP);
 	u8 code[50];
@@ -50,7 +50,7 @@ void show_code(struct kvm_vcpu *vcpu)
 	if (!is_long_mode())
 		rip += vmcs_readl(GUEST_CS_BASE);
 
-	kvm_read_guest(vcpu, rip, sizeof code, code);
+	litevm_read_guest(vcpu, rip, sizeof code, code);
 	for (i = 0; i < sizeof code; ++i)
 		sprintf(buf + i * 3, " %02x", code[i]);
 	vcpu_printf(vcpu, "code: %lx%s\n", rip, buf);
@@ -65,7 +65,7 @@ struct gate_struct {
 	u32 zero1;
 } __attribute__((packed));
 
-void show_irq(struct kvm_vcpu *vcpu,  int irq)
+void show_irq(struct litevm_vcpu *vcpu,  int irq)
 {
 	unsigned long idt_base = vmcs_readl(GUEST_IDTR_BASE);
 	unsigned long idt_limit = vmcs_readl(GUEST_IDTR_LIMIT);
@@ -81,7 +81,7 @@ void show_irq(struct kvm_vcpu *vcpu,  int irq)
 		return;
 	}
 
-	if (kvm_read_guest(vcpu, idt_base + irq * sizeof(gate), sizeof(gate), &gate) != sizeof(gate)) {
+	if (litevm_read_guest(vcpu, idt_base + irq * sizeof(gate), sizeof(gate), &gate) != sizeof(gate)) {
 		vcpu_printf(vcpu, "%s: 0x%x read_guest err\n",
 			   __FUNCTION__,
 			   irq);
@@ -95,7 +95,7 @@ void show_irq(struct kvm_vcpu *vcpu,  int irq)
 		   gate.offset_low);
 }
 
-void show_page(struct kvm_vcpu *vcpu,
+void show_page(struct litevm_vcpu *vcpu,
 			     gva_t addr)
 {
 	u64 *buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
@@ -104,7 +104,7 @@ void show_page(struct kvm_vcpu *vcpu,
 		return;
 
 	addr &= PAGE_MASK;
-	if (kvm_read_guest(vcpu, addr, PAGE_SIZE, buf)) {
+	if (litevm_read_guest(vcpu, addr, PAGE_SIZE, buf)) {
 		int i;
 		for (i = 0; i <  PAGE_SIZE / sizeof(u64) ; i++) {
 			u8 *ptr = (u8*)&buf[i];
@@ -119,11 +119,11 @@ void show_page(struct kvm_vcpu *vcpu,
 	kfree(buf);
 }
 
-void show_u64(struct kvm_vcpu *vcpu, gva_t addr)
+void show_u64(struct litevm_vcpu *vcpu, gva_t addr)
 {
 	u64 buf;
 
-	if (kvm_read_guest(vcpu, addr, sizeof(u64), &buf) == sizeof(u64)) {
+	if (litevm_read_guest(vcpu, addr, sizeof(u64), &buf) == sizeof(u64)) {
 		u8 *ptr = (u8*)&buf;
 		int j;
 		vcpu_printf(vcpu, " 0x%16.16lx:", addr);
@@ -140,7 +140,7 @@ static int is_canonical(unsigned long addr)
        return  addr == ((long)addr << 16) >> 16;
 }
 
-int vm_entry_test_guest(struct kvm_vcpu *vcpu)
+int vm_entry_test_guest(struct litevm_vcpu *vcpu)
 {
 	unsigned long cr0;
 	unsigned long cr4;
@@ -761,7 +761,7 @@ int vm_entry_test_guest(struct kvm_vcpu *vcpu)
 	return 1;
 }
 
-static int check_fixed_bits(struct kvm_vcpu *vcpu, const char *reg,
+static int check_fixed_bits(struct litevm_vcpu *vcpu, const char *reg,
 			    unsigned long cr,
 			    u32 msr_fixed_0, u32 msr_fixed_1)
 {
@@ -790,7 +790,7 @@ static int phys_addr_width(void)
 	return eax & 0xff;
 }
 
-static int check_canonical(struct kvm_vcpu *vcpu, const char *name,
+static int check_canonical(struct litevm_vcpu *vcpu, const char *name,
 			   unsigned long reg)
 {
 #ifdef __x86_64__
@@ -808,7 +808,7 @@ static int check_canonical(struct kvm_vcpu *vcpu, const char *name,
 	return 1;
 }
 
-static int check_selector(struct kvm_vcpu *vcpu, const char *name,
+static int check_selector(struct litevm_vcpu *vcpu, const char *name,
 			  int rpl_ti, int null,
 			  u16 sel)
 {
@@ -831,7 +831,7 @@ static int check_selector(struct kvm_vcpu *vcpu, const char *name,
 #define MSR_IA32_VMX_CR4_FIXED0 0x488
 #define MSR_IA32_VMX_CR4_FIXED1 0x489
 
-int vm_entry_test_host(struct kvm_vcpu *vcpu)
+int vm_entry_test_host(struct litevm_vcpu *vcpu)
 {
 	int r = 0;
 	unsigned long cr0 = vmcs_readl(HOST_CR0);
@@ -903,7 +903,7 @@ int vm_entry_test_host(struct kvm_vcpu *vcpu)
 	return r;
 }
 
-int vm_entry_test(struct kvm_vcpu *vcpu)
+int vm_entry_test(struct litevm_vcpu *vcpu)
 {
 	int rg, rh;
 
@@ -912,7 +912,7 @@ int vm_entry_test(struct kvm_vcpu *vcpu)
 	return rg && rh;
 }
 
-void vmcs_dump(struct kvm_vcpu *vcpu)
+void vmcs_dump(struct litevm_vcpu *vcpu)
 {
 	vcpu_printf(vcpu, "************************ vmcs_dump ************************\n");
 	vcpu_printf(vcpu, "VM_ENTRY_CONTROLS 0x%x\n", vmcs_read32(VM_ENTRY_CONTROLS));
@@ -980,7 +980,7 @@ void vmcs_dump(struct kvm_vcpu *vcpu)
 	vcpu_printf(vcpu, "***********************************************************\n");
 }
 
-void regs_dump(struct kvm_vcpu *vcpu)
+void regs_dump(struct litevm_vcpu *vcpu)
 {
 	#define REG_DUMP(reg) \
 		vcpu_printf(vcpu, #reg" = 0x%lx\n", vcpu->regs[VCPU_REGS_##reg])
@@ -1012,7 +1012,7 @@ void regs_dump(struct kvm_vcpu *vcpu)
 	vcpu_printf(vcpu, "***********************************************************\n");
 }
 
-void sregs_dump(struct kvm_vcpu *vcpu)
+void sregs_dump(struct litevm_vcpu *vcpu)
 {
 	vcpu_printf(vcpu, "************************ sregs_dump ************************\n");
 	vcpu_printf(vcpu, "cr0 = 0x%lx\n", guest_cr0());

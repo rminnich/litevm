@@ -1,6 +1,6 @@
-%define kmod_name kvm
+%define kmod_name litevm
 
-Name:           kvm-kmod
+Name:           litevm-kmod
 Version:        0.0
 Release:        0
 Summary:        %{kmod_name} kernel module

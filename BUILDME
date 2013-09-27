@@ -1,2 +1,2 @@
 #make -C <path_to_kernel_src> M=$PWD
-make -C /build/peppy/var/cache/portage/sys-kernel/chromeos-kernel-next M=`pwd`
+make -C /build/peppy/var/cache/portage/sys-kernel/chromeos-kernel-next M=`pwd` $*
