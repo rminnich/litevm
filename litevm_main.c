@@ -303,8 +303,7 @@ int litevm_read_guest(struct litevm_vcpu *vcpu,
 			break;
 
 		guest_buf = (hva_t)kmap_atomic(
-					pfn_to_page(paddr >> PAGE_SHIFT),
-					KM_USER0);
+					pfn_to_page(paddr >> PAGE_SHIFT));
 		offset = addr & ~PAGE_MASK;
 		guest_buf |= offset;
 		now = min(size, PAGE_SIZE - offset);
@@ -312,7 +311,7 @@ int litevm_read_guest(struct litevm_vcpu *vcpu,
 		host_buf += now;
 		addr += now;
 		size -= now;
-		kunmap_atomic((void *)(guest_buf & PAGE_MASK), KM_USER0);
+		kunmap_atomic((void *)(guest_buf & PAGE_MASK));
 	}
 	return req_size - size;
 }
@@ -336,8 +335,7 @@ int litevm_write_guest(struct litevm_vcpu *vcpu,
 		if (is_error_hpa(paddr))
 			break;
 
-		guest_buf = (hva_t)kmap_atomic(
-				pfn_to_page(paddr >> PAGE_SHIFT), KM_USER0);
+		guest_buf = (hva_t)kmap_atomic(pfn_to_page(paddr >> PAGE_SHIFT));
 		offset = addr & ~PAGE_MASK;
 		guest_buf |= offset;
 		now = min(size, PAGE_SIZE - offset);
@@ -345,7 +343,7 @@ int litevm_write_guest(struct litevm_vcpu *vcpu,
 		host_buf += now;
 		addr += now;
 		size -= now;
-		kunmap_atomic((void *)(guest_buf & PAGE_MASK), KM_USER0);
+		kunmap_atomic((void *)(guest_buf & PAGE_MASK));
 	}
 	return req_size - size;
 }
@@ -780,19 +778,19 @@ static int init_rmode_tss(struct litevm* litevm)
 		return 0;
 	}
 
-	page = kmap_atomic(p1, KM_USER0);
+	page = kmap_atomic(p1);
 	memset(page, 0, PAGE_SIZE);
 	*(u16*)(page + 0x66) = TSS_BASE_SIZE + TSS_REDIRECTION_SIZE;
-	kunmap_atomic(page, KM_USER0);
+	kunmap_atomic(page);
 
-	page = kmap_atomic(p2, KM_USER0);
+	page = kmap_atomic(p2);
 	memset(page, 0, PAGE_SIZE);
-	kunmap_atomic(page, KM_USER0);
+	kunmap_atomic(page);
 
-	page = kmap_atomic(p3, KM_USER0);
+	page = kmap_atomic(p3);
 	memset(page, 0, PAGE_SIZE);
 	*(page + RMODE_TSS_SIZE - 2 * PAGE_SIZE - 1) = ~0;
-	kunmap_atomic(page, KM_USER0);
+	kunmap_atomic(page);
 
 	return 1;
 }
@@ -885,7 +883,7 @@ static int pdptrs_have_reserved_bits_set(struct litevm_vcpu *vcpu,
 	spin_lock(&vcpu->litevm->lock);
 	memslot = gfn_to_memslot(vcpu->litevm, pdpt_gfn);
 	/* FIXME: !memslot - emulate? 0xff? */
-	pdpt = kmap_atomic(gfn_to_page(memslot, pdpt_gfn), KM_USER0);
+	pdpt = kmap_atomic(gfn_to_page(memslot, pdpt_gfn));
 
 	for (i = 0; i < 4; ++i) {
 		pdpte = pdpt[offset + i];
@@ -893,7 +891,7 @@ static int pdptrs_have_reserved_bits_set(struct litevm_vcpu *vcpu,
 			break;
 	}
 
-	kunmap_atomic(pdpt, KM_USER0);
+	kunmap_atomic(pdpt);
 	spin_unlock(&vcpu->litevm->lock);
 
 	return i != 4;
@@ -1674,11 +1672,11 @@ static int emulator_read_std(unsigned long addr,
 		memslot = gfn_to_memslot(vcpu->litevm, pfn);
 		if (!memslot)
 			return X86EMUL_UNHANDLEABLE;
-		page = kmap_atomic(gfn_to_page(memslot, pfn), KM_USER0);
+		page = kmap_atomic(gfn_to_page(memslot, pfn));
 
 		memcpy(data, page + offset, tocopy);
 
-		kunmap_atomic(page, KM_USER0);
+		kunmap_atomic(page);
 
 		bytes -= tocopy;
 		data += tocopy;
