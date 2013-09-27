@@ -595,7 +595,7 @@ static void litevm_free_physmem(struct litevm *litevm)
 static void litevm_free_vmcs(struct litevm_vcpu *vcpu)
 {
 	if (vcpu->vmcs) {
-		on_each_cpu(__vcpu_clear, vcpu, 0, 1);
+		on_each_cpu(__vcpu_clear, vcpu, 1);
 		free_vmcs(vcpu->vmcs);
 		vcpu->vmcs = 0;
 	}
@@ -3327,7 +3327,7 @@ static int litevm_reboot(struct notifier_block *notifier, unsigned long val,
 		 * in vmx root mode.
 		 */
 		printk(KERN_INFO "litevm: exiting vmx mode\n");
-		on_each_cpu(litevm_disable, 0, 0, 1);
+		on_each_cpu(litevm_disable, 0, 1);
 	}
 	return NOTIFY_OK;
 }
@@ -3378,7 +3378,7 @@ static __init int litevm_init(void)
 	r = alloc_litevm_area();
 	if (r)
 		goto out;
-	on_each_cpu(litevm_enable, 0, 0, 1);
+	on_each_cpu(litevm_enable, 0, 1);
 	register_reboot_notifier(&litevm_reboot_notifier);
 
 	r = misc_register(&litevm_dev);
@@ -3410,7 +3410,7 @@ static __exit void litevm_exit(void)
 	litevm_exit_debug();
 	misc_deregister(&litevm_dev);
 	unregister_reboot_notifier(&litevm_reboot_notifier);
-	on_each_cpu(litevm_disable, 0, 0, 1);
+	on_each_cpu(litevm_disable, 0, 1);
 	free_litevm_area();
 	__free_page(pfn_to_page(bad_page_address >> PAGE_SHIFT));
 }
