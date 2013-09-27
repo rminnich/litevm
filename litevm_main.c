@@ -62,7 +62,7 @@ static const u32 vmx_msr_index[] = {
 #ifdef __x86_64__
 	MSR_SYSCALL_MASK, MSR_LSTAR, MSR_CSTAR, MSR_KERNEL_GS_BASE,
 #endif
-	MSR_EFER, MSR_K6_STAR,
+	MSR_EFER, // wtf? MSR_K6_STAR,
 };
 #define NR_VMX_MSR (sizeof(vmx_msr_index) / sizeof(*vmx_msr_index))
 
@@ -82,7 +82,6 @@ static const u32 vmx_msr_index[] = {
 #define TSS_REDIRECTION_SIZE (256 / 8)
 #define RMODE_TSS_SIZE (TSS_BASE_SIZE + TSS_REDIRECTION_SIZE + TSS_IOPB_SIZE + 1)
 
-#define MSR_IA32_FEATURE_CONTROL 		0x03a
 #define MSR_IA32_VMX_BASIC_MSR   		0x480
 #define MSR_IA32_VMX_PINBASED_CTLS_MSR		0x481
 #define MSR_IA32_VMX_PROCBASED_CTLS_MSR		0x482
