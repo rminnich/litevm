@@ -3273,29 +3273,26 @@ out:
 	return r;
 }
 
-static struct page *litevm_dev_nopage(struct vm_area_struct *vma,
-				   unsigned long address,
-				   int *type)
+static int litevm_dev_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
 	struct litevm *litevm = vma->vm_file->private_data;
-	unsigned long pgoff;
 	struct litevm_memory_slot *slot;
 	struct page *page;
 
-	*type = VM_FAULT_MINOR;
-	pgoff = ((address - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
-	slot = gfn_to_memslot(litevm, pgoff);
+	slot = gfn_to_memslot(litevm, vmf->pgoff);
 	if (!slot)
-		return NOPAGE_SIGBUS;
-	page = gfn_to_page(slot, pgoff);
+		return VM_FAULT_SIGBUS;
+	page = gfn_to_page(slot, vmf->pgoff);
 	if (!page)
-		return NOPAGE_SIGBUS;
+		return VM_FAULT_SIGBUS;
+
 	get_page(page);
-	return page;
+	vmf->page = page;
+	return 0;
 }
 
 static struct vm_operations_struct litevm_dev_vm_ops = {
-	.nopage = litevm_dev_nopage,
+	.fault = litevm_dev_fault,
 };
 
 static int litevm_dev_mmap(struct file *file, struct vm_area_struct *vma)
