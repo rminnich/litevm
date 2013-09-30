@@ -488,7 +488,7 @@ static __init int cpu_has_litevm_support(void)
 	return test_bit(5, &ecx); /* CPUID.1:ECX.VMX[bit 5] -> VT */
 }
 
-static __exit void free_litevm_area(void)
+static void free_litevm_area(void)
 {
 	int cpu;
 
