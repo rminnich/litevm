@@ -49,7 +49,7 @@ static void FNAME(init_walker)(struct guest_walker *walker,
 	slot = gfn_to_memslot(vcpu->litevm,
 			      (vcpu->cr3 & PT64_BASE_ADDR_MASK) >> PAGE_SHIFT);
 	hpa = safe_gpa_to_hpa(vcpu, vcpu->cr3 & PT64_BASE_ADDR_MASK);
-	walker->table = kmap_atomic(pfn_to_page(hpa >> PAGE_SHIFT), KM_USER0);
+	walker->table = kmap_atomic(pfn_to_page(hpa >> PAGE_SHIFT));
 
 	ASSERT((!is_long_mode() && is_pae()) ||
 	       (vcpu->cr3 & ~(PAGE_MASK | CR3_FLAGS_MASK)) == 0);
@@ -61,7 +61,7 @@ static void FNAME(init_walker)(struct guest_walker *walker,
 
 static void FNAME(release_walker)(struct guest_walker *walker)
 {
-	kunmap_atomic(walker->table, KM_USER0);
+	kunmap_atomic(walker->table);
 }
 
 static void FNAME(set_pte)(struct litevm_vcpu *vcpu, u64 guest_pte,
@@ -119,9 +119,8 @@ static pt_element_t *FNAME(fetch_guest)(struct litevm_vcpu *vcpu,
 		if (walker->level != 3 || is_long_mode())
 			walker->inherited_ar &= walker->table[index];
 		paddr = safe_gpa_to_hpa(vcpu, walker->table[index] & PT_BASE_ADDR_MASK);
-		kunmap_atomic(walker->table, KM_USER0);
-		walker->table = kmap_atomic(pfn_to_page(paddr >> PAGE_SHIFT),
-					    KM_USER0);
+		kunmap_atomic(walker->table);
+		walker->table = kmap_atomic(pfn_to_page(paddr >> PAGE_SHIFT));
 		--walker->level;
 	}
 }
