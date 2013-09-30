@@ -31,6 +31,8 @@
 #include <linux/highmem.h>
 #include <linux/file.h>
 #include <linux/slab.h>
+#include <asm/debugreg.h>
+#include <linux/sched.h>
 
 #include "vmx.h"
 #include "x86_emulate.h"
