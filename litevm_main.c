@@ -690,7 +690,7 @@ static void enter_pmode(struct litevm_vcpu *vcpu)
 	vmcs_write32(GUEST_TR_AR_BYTES, vcpu->rmode.tr.ar);
 
 	flags = vmcs_readl(GUEST_RFLAGS);
-	flags &= ~(IOPL_MASK | X86_EFLAGS_VM);
+	flags &= ~(X86_EFLAGS_IOPL | X86_EFLAGS_VM);
 	flags |= (vcpu->rmode.save_iopl << IOPL_SHIFT);
 	vmcs_writel(GUEST_RFLAGS, flags);
 
@@ -739,9 +739,9 @@ static void enter_rmode(struct litevm_vcpu *vcpu)
 	vmcs_write32(GUEST_TR_AR_BYTES, 0x008b);
 
 	flags = vmcs_readl(GUEST_RFLAGS);
-	vcpu->rmode.save_iopl = (flags & IOPL_MASK) >> IOPL_SHIFT;
+	vcpu->rmode.save_iopl = (flags & X86_EFLAGS_IOPL) >> IOPL_SHIFT;
 
-	flags |= IOPL_MASK | X86_EFLAGS_VM;
+	flags |= X86_EFLAGS_IOPL | X86_EFLAGS_VM;
 
 	vmcs_writel(GUEST_RFLAGS, flags);
 	vmcs_writel(GUEST_CR4, vmcs_readl(GUEST_CR4) | CR4_VME_MASK);
