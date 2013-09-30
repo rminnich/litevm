@@ -398,7 +398,7 @@ static struct litevm_vcpu *__vcpu_load(struct litevm_vcpu *vcpu)
 	cpu = get_cpu();
 
 	if (vcpu->cpu != cpu) {
-		smp_call_function(__vcpu_clear, vcpu, 0, 1);
+		smp_call_function(__vcpu_clear, vcpu, 1);
 		vcpu->launched = 0;
 	}
 
